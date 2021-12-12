@@ -1,0 +1,38 @@
+{
+  "dependencies": {
+    "@babel/core": "^7.16.0",
+    "@babel/preset-env": "^7.16.4",
+    "@babel/preset-react": "^7.16.0",
+    "babel-loader": "^8.2.3",
+    "bootstrap": "^5.1.3",
+    "css-loader": "^6.5.1",
+    "electron": "^11.5.0",
+    "electron-rebuild": "^3.2.5",
+    "express": "^4.17.1",
+    "file-loader": "^6.2.0",
+    "msnodesqlv8": "^2.4.3",
+    "mssql": "^7.3.0",
+    "mysql": "^2.18.1",
+    "react": "^17.0.2",
+    "react-bootstrap": "^2.0.3",
+    "react-datetime": "^3.1.1",
+    "react-dom": "^17.0.2",
+    "regenerator-runtime": "^0.13.9",
+    "style-loader": "^3.3.1",
+    "webpack": "^5.65.0",
+    "webpack-dev-server": "^4.6.0"
+  },
+  "devDependencies": {
+    "@electron-forge/plugin-webpack": "^6.0.0-beta.61",
+    "webpack-cli": "^4.9.1"
+  },
+  "name": "l-db",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "wWrongName",
+  "license": "ISC",
+  "description": ""
+}
