@@ -5,6 +5,7 @@ import {Navbar, Container} from "react-bootstrap"
 import DBTable from "./DBTable"
 import Tables from "./Tables"
 
+import "regenerator-runtime/runtime.js"
 import 'bootstrap/dist/css/bootstrap.min.css'
 import '../css/index.css'
 import logo from '../img/img.png'

@@ -2,6 +2,7 @@ import React from "react"
 import {Card, Table, Button, Modal, DropdownButton, Dropdown} from "react-bootstrap"
 import Datetime from "react-datetime"
 
+import "regenerator-runtime/runtime.js"
 const electron = window.require('electron')
 const ipcRenderer = electron.ipcRenderer
 
@@ -35,12 +36,15 @@ class DBTable extends React.Component {
     updTableData () {
         let data = ipcRenderer.sendSync('get_full_table', {table : this.props.tableName})
         if (this.state.addFlag) {
-            data.push(this.getTableProps().reduce((prev, cur, index) => {
+            let res = this.getTableProps()
+            data.push(res.reduce((prev, cur, index) => {
                 prev[cur] = undefined
                 return prev
             }, {}))
+            this.setState({tableData : (data.length) ? data : [{}]})
         }
-        this.setState({tableData : (data.length) ? data : [{}]})
+        else
+            this.setState({tableData : (data.length) ? data : [{}]})
     }
 
     addData () {
@@ -89,7 +93,7 @@ class DBTable extends React.Component {
                     if (row[columnName] !== undefined) {
                         return (
                             <td className="c-buttons"
-                                onClick={this.openModal.bind(this, columnName, typeof row[columnName], idFields)}>
+                                onClick={this.openModal.bind(this, columnName, typeof row[columnName], idFields, pkProp)}>
                                 {(typeof row[columnName] === "object") ? JSON.stringify(row[columnName]).replace("Z", '') : row[columnName]}
                             </td>
                         )
@@ -109,24 +113,29 @@ class DBTable extends React.Component {
                     >
                         delete
                     </Button>
-                </td> ||
-                <td>
+                </td> || (Object.keys(row).length && <td>
                     <Button variant="outline-dark"
                             className="without-shadow c-buttons w-100"
                             onClick={this.createRow.bind(this)}
                     >
                         create
                     </Button>
-                </td>}
+                </td>) || <></>}
             </tr>
         )
     }
 
+    checkErr (data) {
+        if (data.error)
+            alert(JSON.stringify(data.error, null, "\t"))
+    }
+
     deleteRow (idFields) {
-        ipcRenderer.sendSync('delete_row', {
+        let data = ipcRenderer.sendSync('delete_row', {
             table : this.props.tableName,
             id : idFields
         })
+        this.checkErr(data)
     }
 
     setDropdownById (id, value) {
@@ -170,7 +179,7 @@ class DBTable extends React.Component {
             )
         }
 
-        let type = ipcRenderer.sendSync("get_prop_type", {table : this.props.tableName, prop : columnName})
+        let type = ipcRenderer.sendSync("get_prop_type", {table : this.props.tableName, prop : columnName}).type
         if (type === "datetime2") {
             return <Datetime />
         } else if (type === "bit") {
@@ -204,7 +213,9 @@ class DBTable extends React.Component {
         )
     }
 
-    openModal (field, type, idFields) {
+    openModal (field, type, idFields, pkProp) {
+        if (pkProp[0]["Field"] === `[${field}]`)
+            return
         this.setState({
             dropdownName : "choose value",
             field : field,
@@ -229,18 +240,18 @@ class DBTable extends React.Component {
             let list = ipcRenderer.sendSync("select", {table : refs[0].ReferencedTable, prop : refs[0].ReferencedColumnName})
             let dropdown = this.state.dropdowns.find(el => el.id === columnName)
             return (
-            <DropdownButton
-            id={`add-${columnName}`}
-            drop="down"
-            variant="secondary"
-            title={(dropdown) ? dropdown.value : ""}
-            >
-                {list.map(el => {
-                    return (<Dropdown.Item onClick={this.setDropdownById.bind(this, columnName, el[refs[0].ReferencedColumnName])}>
-                        {el[refs[0].ReferencedColumnName]}
-                    </Dropdown.Item>)
-                })}
-            </DropdownButton>
+                <DropdownButton
+                id={`add-${columnName}`}
+                drop="down"
+                variant="secondary"
+                title={(dropdown) ? dropdown.value : ""}
+                >
+                    {list.map(el => {
+                        return (<Dropdown.Item onClick={this.setDropdownById.bind(this, columnName, el[refs[0].ReferencedColumnName])}>
+                            {el[refs[0].ReferencedColumnName]}
+                        </Dropdown.Item>)
+                    })}
+                </DropdownButton>
             )
         }
         if (type === "object") {
@@ -314,12 +325,13 @@ class DBTable extends React.Component {
             dataForUpdate = document.getElementById("c-input").value
         }
         if (!err) {
-            ipcRenderer.sendSync('update_field', {
+            let data = ipcRenderer.sendSync('update_field', {
                 table : this.props.tableName,
                 column : field,
                 value : dataForUpdate,
                 id : this.state.idFields
             })
+            this.checkErr(data)
             this.closeModal()
         }
         console.log(dataForUpdate)
@@ -328,7 +340,7 @@ class DBTable extends React.Component {
     createRow () {
         let props = this.getTableProps(), datetimeCounter = 0, result = {}
         for (let prop of props) {
-            let type = ipcRenderer.sendSync("get_prop_type", {table : this.props.tableName, prop : prop})
+            let type = ipcRenderer.sendSync("get_prop_type", {table : this.props.tableName, prop : prop}).type
             if (type === "datetime2") {
                 result[prop] = document.getElementsByClassName("rdt")[datetimeCounter++].children[0].value
                 try {
@@ -344,7 +356,7 @@ class DBTable extends React.Component {
         }
         if (result[Object.keys(result)[0]] === "")
             delete result[Object.keys(result)[0]]
-        ipcRenderer.sendSync("insert", {
+        let data = ipcRenderer.sendSync("insert", {
             table : this.props.tableName,
             values : Object.keys(result).map(el => {
                 if (result[el] === "")
@@ -352,6 +364,7 @@ class DBTable extends React.Component {
                 return result[el]
             })
         })
+        this.checkErr(data)
     }
 
     render () {

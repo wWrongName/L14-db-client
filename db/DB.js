@@ -6,7 +6,7 @@ class DB {
         let sqlConfig = {
             user: "DESKTOP-G50P625\\john",
             password: "",
-            database: "Checkpoint",
+            database: "AirLogger",
             server: 'DESKTOP-G50P625',
             driver: 'msnodesqlv8',
             options: {
@@ -55,7 +55,7 @@ class DB {
             let q = mysql.format(`UPDATE ? set ?=\\'?\\' ${where}`, args)
             this.query(q)
             .then(res => resolve(res))
-            .catch(err => resolve(err.originalError))
+            .catch(err => resolve({error : err}))
         })
     }
 
@@ -63,7 +63,7 @@ class DB {
         return new Promise(resolve => {
             this.query(`INSERT INTO ${table} VALUES (${values})`)
             .then(res => resolve(res))
-            .catch(err => resolve(err))
+            .catch(err => resolve({error : err}))
         })
     }
 
@@ -77,8 +77,8 @@ class DB {
             }
             where = where.substring(0, where.length-3)
             this.query(mysql.format(`DELETE FROM ? ${where}`, args))
-            .then(res => resolve(res.recordset))
-            .catch(() => resolve([]))
+            .then(res => resolve(res))
+            .catch(err => resolve({error : err}))
         })
     }
 
@@ -89,7 +89,7 @@ class DB {
                 whereString = ` WHERE ?`
             this.query(mysql.format(`SELECT ? FROM ?${whereString}`, [what, table, where]))
             .then(res => resolve(res.recordset))
-            .catch(() => resolve([]))
+            .catch(err => resolve({error : err}))
         })
     }
 
@@ -146,7 +146,7 @@ class DB {
         return new Promise(resolve => {
             this.select("DATA_TYPE", "INFORMATION_SCHEMA.COLUMNS", `TABLE_NAME = '${table}' AND COLUMN_NAME = '${prop}'`)
             .then(res => resolve(res[0].DATA_TYPE))
-            .catch(err => resolve(""))
+            .catch(err => resolve([]))
         })
     }
 

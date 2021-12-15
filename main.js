@@ -1,7 +1,7 @@
 const {app, BrowserWindow, ipcMain} = require('electron')
 const path = require('path')
-const DB = require("./db/DB")
-const db = new DB()
+const requests = require('./requests')
+
 
 function createWindow (file) {
     mainWindow = new BrowserWindow({
@@ -28,87 +28,46 @@ app.on('window-all-closed', function () {
     if (process.platform !== 'darwin') app.quit()
 })
 
-ipcMain.on("get_tables", (event, args) => {
-    db.getTables()
-    .then(res => event.returnValue = res)
+ipcMain.on("get_tables", async (event, args) => {
+    event.returnValue = await requests.get_tables()
 })
 
-ipcMain.on("get_full_table", (event, args) => {
-    if (args.table && typeof args.table === "string")
-        db.getFullTable(args.table).then(res => event.returnValue = res)
-    else
-        event.returnValue = []
+ipcMain.on("get_full_table", async (event, args) => {
+    event.returnValue = await requests.get_full_table(args.table)
 })
 
-ipcMain.on('get_prop_type', (event, args) => {
-    if (args.table && typeof args.table === "string" && args.prop && typeof args.prop === "string")
-        db.getPropType(args.table, args.prop).then(res => event.returnValue = res)
-    else
-        event.returnValue = ""
+ipcMain.on('get_prop_type', async (event, args) => {
+    event.returnValue = await requests.get_prop_type(args.table, args.prop)
 })
 
-ipcMain.on('get_table_props', (event, args) => {
-    if (args.table && typeof args.table === "string")
-        db.getProps(args.table).then(res => event.returnValue = res)
-    else
-        event.returnValue = []
+ipcMain.on('get_table_props', async (event, args) => {
+    event.returnValue = await requests.get_table_props(args.table)
 })
 
-ipcMain.on('get_refs', (event, args) => {
-    if (args.table && typeof args.table === "string" && args.prop && typeof args.prop === "string")
-        db.getReferences(args.table, args.prop).then(res => event.returnValue = res)
-    else
-        event.returnValue = []
+ipcMain.on('get_refs', async (event, args) => {
+    event.returnValue = await requests.get_refs(args.table, args.prop)
 })
 
-ipcMain.on('select', (event, args) => {
-    if (args.table && typeof args.table === "string" && args.prop && typeof args.prop === "string")
-        db.select(args.prop, args.table).then(res => event.returnValue = res)
-    else
-        event.returnValue = []
+ipcMain.on('select', async (event, args) => {
+    event.returnValue = await requests.select(args.table, args.prop)
 })
 
-ipcMain.on('insert',(event, args) => {
-    if (Array.isArray(args.values) && args.table && typeof args.table === "string") {
-        console.log(args.values)
-        let values = args.values.reduce((prev, cur, i) => {
-            if (i)
-                return prev + ", \\'" + cur + "\\'"
-            return prev + "\\'" + cur + "\\'"
-        }, '')
-        db.insert(args.table, values).then(res => event.returnValue = res)
-    } else
-        event.returnValue = false
+ipcMain.on('insert',async (event, args) => {
+    event.returnValue = await requests.insert(args.table, args.values)
 })
 
-ipcMain.on('getPKField', (event, args) => {
-    if (args.table && typeof args.table === "string") {
-        db.getPKField(args.table).then(res => event.returnValue = res)
-    } else
-        event.returnValue = []
+ipcMain.on('getPKField', async (event, args) => {
+    event.returnValue = await requests.getPKField(args.table)
 })
 
-ipcMain.on('getPKFields', (event, args) => {
-    if (args.table && typeof args.table === "string") {
-        db.getPKFields(args.table).then(res => {
-            event.returnValue = res.map(el => {
-                return el["Field"].substring(1, el["Field"].length - 1)
-            })
-        })
-    } else
-        event.returnValue = []
+ipcMain.on('getPKFields', async (event, args) => {
+    event.returnValue = await requests.getPKFields(args.table)
 })
 
-ipcMain.on('update_field', (event, args) => {
-    if (args.table && typeof args.table === "string" && args.value !== undefined && args.column !== undefined && args.id !== undefined) {
-        db.update(args.table, args.column, args.value, args.id).then(res => event.returnValue = res)
-    } else
-        event.returnValue = false
+ipcMain.on('update_field', async (event, args) => {
+    event.returnValue = await requests.update_field(args.table, args.column, args.value, args.id)
 })
 
-ipcMain.on('delete_row', (event, args) => {
-    if (args.id !== undefined) {
-        db.delete(args.table, args.id).then(res => event.returnValue = res)
-    } else
-        event.returnValue = false
+ipcMain.on('delete_row', async (event, args) => {
+    event.returnValue = await requests.delete_row(args.table, args.id)
 })
