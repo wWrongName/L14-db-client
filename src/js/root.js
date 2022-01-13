@@ -72,12 +72,12 @@ class Root extends React.Component {
                                 className="d-inline-block align-top "
                                 alt="logo"
                             />
-                            DB client
+                            БД Клиент
                         </Navbar.Brand>
                         <div>
                             <div className="input-group rounded">
                                 <input
-                                    type="search" className="form-control rounded without-shadow" placeholder="Search"
+                                    type="search" className="form-control rounded without-shadow" placeholder="Поиск"
                                     aria-label="Search"
                                     aria-describedby="search-addon"
                                     onChange={e => {this.changeSearchWord(e.target.value)}}

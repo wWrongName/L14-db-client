@@ -6,7 +6,7 @@ class DB {
         let sqlConfig = {
             user: "DESKTOP-G50P625\\john",
             password: "",
-            database: "AirLogger",
+            database: "Checkpoint",
             server: 'DESKTOP-G50P625',
             driver: 'msnodesqlv8',
             options: {

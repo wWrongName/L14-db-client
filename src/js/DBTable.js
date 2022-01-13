@@ -11,6 +11,19 @@ class DBTable extends React.Component {
     constructor(props) {
         super(props)
 
+        this.localisationPairs = {
+            id_Exception : "Идентификатор исключения",
+            Message : "Сообщение",
+            targetSite : "Место исключения",
+            timeException : "Время исключения",
+            indexForm : "Индекс формы",
+            id_Project : "Идентификатор проекта",
+            id_Student : "Идентификатор студента",
+            projectName : " Имя проекта",
+            projectVersion : "Версия проекта",
+            catalogName : " Имя каталога"
+        }
+
         this.state = {
             tableData : [{['loading ...'] : 'loading ...'}],
             showModal : false,
@@ -35,6 +48,15 @@ class DBTable extends React.Component {
 
     updTableData () {
         let data = ipcRenderer.sendSync('get_full_table', {table : this.props.tableName})
+        // let lang = {
+        //     userExceptions : ["идентификатор проекта",	"id_Student", "projectName", "projectVersion", "catalogName"],
+        //     Project : []
+        // }
+        // if (data.length !== 0) {
+        //     data[0] = Object.keys(data[0]).reduce((prev, cur, i) => {
+        //         prev[]
+        //     }, {})
+        // }
         if (this.state.addFlag) {
             let res = this.getTableProps()
             data.push(res.reduce((prev, cur, index) => {
@@ -60,7 +82,7 @@ class DBTable extends React.Component {
             <thead>
                 <tr>
                     {Object.keys(row).map(columnHeader => {
-                        return (<th>{columnHeader}</th>)
+                        return (<th>{(this.localisationPairs[columnHeader]) ? this.localisationPairs[columnHeader] : columnHeader}</th>)
                     })}
                     <th/>
                 </tr>
@@ -84,7 +106,7 @@ class DBTable extends React.Component {
         let idFields = pks.map((el, i) => {
             return {
                 name : el,
-                value : (typeof row[el] === "object") ? JSON.stringify(row[el]).replace("Z", '').slice(1, -1) : row[el]
+                value : (typeof row[el] === "object") ? JSON.stringify(row[el]).replace("Z", '').replace("T", ' ').slice(1, -5) : row[el]
             }
         })
         return (
@@ -94,7 +116,11 @@ class DBTable extends React.Component {
                         return (
                             <td className="c-buttons"
                                 onClick={this.openModal.bind(this, columnName, typeof row[columnName], idFields, pkProp)}>
-                                {(typeof row[columnName] === "object") ? JSON.stringify(row[columnName]).replace("Z", '') : row[columnName]}
+                                {
+                                    ("datetime2" === ipcRenderer.sendSync("get_prop_type", {table : this.props.tableName, prop : columnName}).type) ?
+                                        JSON.stringify(row[columnName]).replace("Z", '').replace("T", ' ').slice(1, -5) :
+                                        row[columnName]
+                                }
                             </td>
                         )
                     } else {
@@ -111,14 +137,14 @@ class DBTable extends React.Component {
                             className="without-shadow c-buttons w-100"
                             onClick={this.deleteRow.bind(this, idFields)}
                     >
-                        delete
+                        удалить
                     </Button>
                 </td> || (Object.keys(row).length && <td>
                     <Button variant="outline-dark"
                             className="without-shadow c-buttons w-100"
                             onClick={this.createRow.bind(this)}
                     >
-                        create
+                        создать
                     </Button>
                 </td>) || <></>}
             </tr>
@@ -126,8 +152,13 @@ class DBTable extends React.Component {
     }
 
     checkErr (data) {
-        if (data.error)
+        if (data.error) {
+            ipcRenderer.sendSync("insert", {
+                table: "UserException",
+                values: [JSON.stringify(data.error, null, "\t"), this.props.tableName, new Date().toISOString(), ""]
+            })
             alert(JSON.stringify(data.error, null, "\t"))
+        }
     }
 
     deleteRow (idFields) {
@@ -254,7 +285,7 @@ class DBTable extends React.Component {
                 </DropdownButton>
             )
         }
-        if (type === "object") {
+        if ("datetime2" === ipcRenderer.sendSync("get_prop_type", {table : this.props.tableName, prop : columnName}).type) {
             return <Datetime />
         } else if (type === "boolean") {
             return (
@@ -292,7 +323,7 @@ class DBTable extends React.Component {
                 centered
             >
                 <Modal.Header closeButton>
-                    <Modal.Title>Update {field}</Modal.Title>
+                    <Modal.Title>Обновить {field}</Modal.Title>
                 </Modal.Header>
 
                 <Modal.Body>
@@ -300,8 +331,8 @@ class DBTable extends React.Component {
                 </Modal.Body>
 
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={this.closeModal.bind(this)}>Close</Button>
-                    <Button variant="primary" onClick={this.updateTableData.bind(this, field, type)}>Update</Button>
+                    <Button variant="secondary" onClick={this.closeModal.bind(this)}>Закрыть</Button>
+                    <Button variant="primary" onClick={this.updateTableData.bind(this, field, type)}>ОБновить</Button>
                 </Modal.Footer>
             </Modal>
         )
@@ -309,12 +340,12 @@ class DBTable extends React.Component {
 
     updateTableData (field, type) {
         let dataForUpdate = "", err = false
-        if (type === "object") {
+        if ("datetime2" === ipcRenderer.sendSync("get_prop_type", {table : this.props.tableName, prop : field}).type) {
             dataForUpdate = document.getElementsByClassName("rdt")[0].children[0].value
             try {
                 dataForUpdate = new Date(dataForUpdate).toISOString()
             } catch (e) {
-                err = true
+                dataForUpdate = new Date().toISOString()
             }
         } else if (type === "boolean") {
             dataForUpdate = (this.state.dropdownName === "true")
@@ -375,7 +406,7 @@ class DBTable extends React.Component {
                         className="without-shadow c-buttons"
                         onClick={this.props.openPage.bind(this.props, this.props.defaultItem)}
                 >
-                    ← Back
+                    ← Назад
                 </Button>
             </div>
             <Card>
@@ -388,7 +419,7 @@ class DBTable extends React.Component {
                             className="without-shadow c-buttons"
                             onClick={this.addData.bind(this)}
                     >
-                        {this.state.addFlag && "Cancel adding" || "Add"}
+                        {this.state.addFlag && "Отменить добавление" || "Добавить"}
                     </Button>
                 </Card.Footer>
             </Card>
